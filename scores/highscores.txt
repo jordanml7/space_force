@@ -2,10 +2,14 @@ Bob,3780
 dfkj,2910
 Jordan,2430
 adskf,1800
+dkflgj,1570
 noah,1290
+TEST,1230
 sdf,790
 sdjsdf,340
+sdf,130
 banana,110
+dfg,110
 Jord,30
 jord,20
 asdf,10

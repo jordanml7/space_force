@@ -4,20 +4,22 @@ from time import sleep
 from numpy.random import randint
 import pygame
 
-from weapons import Weapon
 from obstacle import Obstacle
 from lives import Life
 from rendering import *
 from sounds import *
+from weapons import *
 
 # TO DO:
-# Add new ammo (for each new weapon)
-# Split up weapons into separate classes (with different methods)
-# Generalize weapon method names so can be called for each
-# Build a "WEAPON STORE" & a way to switch between weapons
+# Add new weapons & ammo with varying abilities
+    # rocket launch (might have to implement rate of fire for this)
+# Add prices for weapons
 # maybe cut levels entirely & just have speeding up of alien ships
-    # maybe have some alien ships that require 2+ hits to kill
-    # some weapons that require 2+ collisions to explode
+# maybe have some alien ships that require 2+ hits to kill
+
+R = "Right"
+L = "Left"
+
 
 def gameplay():
     playagain = True
@@ -27,9 +29,7 @@ def gameplay():
         game_params = {
             "name": render_welcome(),
             "speed": 1,
-            "laser_speed": 5,
-            "steps": 15,
-            "weapons": [],
+            "weapon": Weapon1(worldx, worldy),
             "score": 0,
             "level": 0,
             "bonus_starttime": -1,
@@ -39,8 +39,6 @@ def gameplay():
         intro.stop()
 
         pygame.mixer.music.play(-1)
-        game_params["weapons"].append(Weapon(worldx, worldy, 2))
-        # game_params["weapons"].append(Weapon(worldx, worldy, 1))  # buy a new weapon
 
         levels(game_params, num_levels)
         sleep(2)
@@ -54,8 +52,7 @@ def levels(game_params, num_levels):
         game_params["level"] = i + 1
         game_params["bonus_starttime"] = -1
         game_params["speed"] += game_params["level"] / 2
-        game_params["laser_speed"] += 1
-        game_params["weapons"][0].lasers = []
+        game_params["weapon"].mag = []
         max_score = pow(game_params["level"], 2) * 500
         initialize_lives(game_params, 3)
         initialize_obstacles(game_params, 5)
@@ -67,7 +64,6 @@ def levels(game_params, num_levels):
             render_backdrop(game_params["level"])
             render_score(game_params["name"], game_params["score"], max_score)
             render_lives(game_params["lives"])
-            game_params["weapons"][0].update()
 
             lost = roaming(game_params)
             if lost:
@@ -78,22 +74,21 @@ def levels(game_params, num_levels):
 
 def roaming(game_params):
     drop_obstacles(game_params)
-    fire_lasers(game_params)
+    fire_mag(game_params)
     hit, new_bonus = check_hit(game_params)
     if new_bonus > game_params["bonus_starttime"]:
         game_params["bonus_starttime"] = new_bonus
-
     add_new_obstacles(game_params, hit)
+    check_ammo_disappear(game_params)
 
-    check_laser_disappear(game_params)
+    world.blit(game_params["weapon"].image, game_params["weapon"].rect)
+
     check_key_press(game_params)
-
     if check_collision(game_params) or check_misses(game_params):
         pygame.mixer.music.stop()
         crash_sound.play()
         return True
 
-    world.blit(game_params["weapons"][0].image, game_params["weapons"][0].rect)
     pygame.display.flip()
     clock.tick(fps)
 
@@ -107,61 +102,48 @@ def check_key_press(game_params):
             sys.exit()
 
         if event.type == pygame.KEYDOWN:
-            if event.key == ord("q"):
-                pause_start = pygame.time.get_ticks()
-                exit_check_loop(game_params)
-                pause_stop = pygame.time.get_ticks()
-                if game_params["bonus_starttime"] != -1:
-                    game_params["bonus_starttime"] += pause_stop - pause_start
-            if event.key == pygame.K_RIGHT or event.key == ord("d"):
-                game_params["weapons"][0].orientation = "Right"
-                game_params["weapons"][0].control(game_params["steps"])
-            if event.key == pygame.K_LEFT or event.key == ord("a"):
-                game_params["weapons"][0].orientation = "Left"
-                game_params["weapons"][0].control(-game_params["steps"])
             if event.key == ord("p"):
                 pause_loop(game_params)
             if event.key == pygame.K_SPACE:
-                laser_fire.play()
-                game_params["weapons"][0].new_laser()
-
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_RIGHT or event.key == ord("d"):
-                game_params["weapons"][0].control(-game_params["steps"])
-            if event.key == pygame.K_LEFT or event.key == ord("a"):
-                game_params["weapons"][0].control(game_params["steps"])
+                ammo_fire.play()
+                game_params["weapon"].new_ammo()
 
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_z]:
-        game_params["weapons"][0].angle += 5
-        game_params["weapons"][0].rotate()
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        game_params["weapon"].move(R)
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        game_params["weapon"].move(L)
     if keys[pygame.K_c]:
-        game_params["weapons"][0].angle -= 5
-        game_params["weapons"][0].rotate()
+        game_params["weapon"].rotate(R)
+    if keys[pygame.K_z]:
+        game_params["weapon"].rotate(L)
 
     if game_params["bonus_starttime"] != -1:
         render_bonus_mode()
         if keys[pygame.K_SPACE]:
-            laser_fire.play()
-            game_params["weapons"][0].new_laser()
+            ammo_fire.play()
+            game_params["weapon"].new_ammo()
 
 
 def pause_loop(game_params):
     pause_start = pygame.time.get_ticks()
-    game_params["weapons"][0].reset_moving()
     while True:
-        world.blit(game_params["weapons"][0].image, game_params["weapons"][0].rect)
-
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == ord("q"):
-                    exit_check_loop(game_params)
+                    exit_check_loop()
                     pause_stop = pygame.time.get_ticks()
                     if game_params["bonus_starttime"] != -1:
                         game_params["bonus_starttime"] += pause_stop - pause_start
                     return
                 if event.key == ord("i"):
-                    instructions_loop(game_params)
+                    instructions_loop()
+                    pause_stop = pygame.time.get_ticks()
+                    if game_params["bonus_starttime"] != -1:
+                        game_params["bonus_starttime"] += pause_stop - pause_start
+                    return
+                if event.key == ord("s"):
+                    store_loop(game_params)
                     pause_stop = pygame.time.get_ticks()
                     if game_params["bonus_starttime"] != -1:
                         game_params["bonus_starttime"] += pause_stop - pause_start
@@ -177,10 +159,37 @@ def pause_loop(game_params):
         clock.tick(fps)
 
 
-def instructions_loop(game_params):
+def store_loop(game_params):
     while True:
-        world.blit(game_params["weapons"][0].image, game_params["weapons"][0].rect)
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    x, y = event.pos
+                    if (215 < x < 485) and (170 < y < 275):
+                        if isinstance(game_params["weapon"], Weapon1):
+                            continue
+                        else:
+                            game_params["weapon"] = Weapon1(worldx, worldy)
+                            game_params["bonus_starttime"] = -1
+                            return
+                    if (215 < x < 485) and (300 < y < 415):
+                        if isinstance(game_params["weapon"], Weapon2):
+                            continue
+                        else:
+                            game_params["weapon"] = Weapon2(worldx, worldy)
+                            game_params["bonus_starttime"] = -1
+                            return
+            if event.type == pygame.KEYDOWN:
+                if event.key == ord("q"):
+                    return
 
+        render_store()
+        pygame.display.flip()
+        clock.tick(fps)
+
+
+def instructions_loop():
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 return
@@ -190,10 +199,8 @@ def instructions_loop(game_params):
         clock.tick(fps)
 
 
-def exit_check_loop(game_params):
+def exit_check_loop():
     while True:
-        world.blit(game_params["weapons"][0].image, game_params["weapons"][0].rect)
-
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == ord("y"):
@@ -257,11 +264,10 @@ def drop_obstacles(game_params):
         world.blit(obstacle.image, obstacle.rect)
 
 
-def fire_lasers(game_params):
-    laser_speed = game_params["laser_speed"]
-    for laser in game_params["weapons"][0].lasers:
-        laser.fire(laser_speed)
-        world.blit(laser.image, laser.rect)
+def fire_mag(game_params):
+    for ammo in game_params["weapon"].mag:
+        ammo.fire()
+        world.blit(ammo.image, ammo.rect)
 
 
 def check_misses(game_params):
@@ -284,12 +290,12 @@ def check_misses(game_params):
 
 def check_hit(game_params):
     for obstacle in game_params["obstacles"]:
-        for laser in game_params["weapons"][0].lasers:
-            if laser.rect.colliderect(obstacle.rect):
+        for ammo in game_params["weapon"].mag:
+            if ammo.rect.colliderect(obstacle.rect):
                 game_params["obstacles"].remove(obstacle)
-                game_params["weapons"][0].remove_laser(laser)
+                game_params["weapon"].remove_ammo(ammo)
                 game_params["score"] += 10
-                laser_hit.play()
+                ammo_hit.play()
                 if obstacle.bonus:
                     return True, pygame.time.get_ticks()
                 return True, -1
@@ -299,18 +305,22 @@ def check_hit(game_params):
 
 def check_collision(game_params):
     for obstacle in game_params["obstacles"]:
-        if game_params["weapons"][0].rect.colliderect(obstacle.rect):
-            return True
+        if game_params["weapon"].rect.colliderect(obstacle.rect):
+            game_params["weapon"].collisions -= 1
+            game_params["obstacles"].remove(obstacle)
+            crash_sound.play()
+            if game_params["weapon"].collisions == 0:
+                return True
 
     return False
 
 
-def check_laser_disappear(game_params):
-    for laser in game_params["weapons"][0].lasers:
-        if (laser.rect.midbottom[0] < 0 or laser.rect.midbottom[0] > worldx) and (
-            laser.rect.midbottom[1] < 0 or laser.rect.midbottom[1] > worldy
+def check_ammo_disappear(game_params):
+    for ammo in game_params["weapon"].mag:
+        if (ammo.rect.midbottom[0] < 0 or ammo.rect.midbottom[0] > worldx) and (
+            ammo.rect.midbottom[1] < 0 or ammo.rect.midbottom[1] > worldy
         ):
-            game_params["weapons"][0].remove_laser(laser)
+            game_params["weapon"].remove_ammo(ammo)
 
 
 if __name__ == "__main__":

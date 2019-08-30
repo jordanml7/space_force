@@ -89,8 +89,20 @@ def render_pause():
     instruc_rect = instruc.get_rect()
     instruc_rect.center = (worldx / 2, worldy / 2 + 30)
 
-    world.blit(instruc, instruc_rect)
+    store = font_extra_small.render(
+        "Press 's' for the WEAPON STORE", True, WHITE, BLACK
+    )
+    store_rect = store.get_rect()
+    store_rect.center = (worldx / 2, worldy / 2 + 50)
+
+    exit = font_extra_small.render("Press 'q' to exit the game", True, WHITE, BLACK)
+    exit_rect = exit.get_rect()
+    exit_rect.center = (worldx / 2, worldy / 2 + 70)
+
     world.blit(pause, pause_rect)
+    world.blit(instruc, instruc_rect)
+    world.blit(store, store_rect)
+    world.blit(exit, exit_rect)
 
 
 def render_instructions():
@@ -101,6 +113,16 @@ def render_instructions():
     color = (randint(0, 255), randint(0, 255), randint(0, 255))
     world.blit(instruc, instruc_rect)
     pygame.draw.rect(world, color, instruc_rect, 2)
+
+
+def render_store():
+    store = pygame.image.load(f"images/store.png").convert()
+    store_rect = store.get_rect()
+    store_rect.center = (worldx / 2, worldy / 2)
+
+    color = (randint(0, 255), randint(0, 255), randint(0, 255))
+    world.blit(store, store_rect)
+    pygame.draw.rect(world, color, store_rect, 2)
 
 
 def render_welcome():
