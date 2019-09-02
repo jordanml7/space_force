@@ -11,10 +11,9 @@ from sounds import *
 from weapons import *
 
 # TO DO:
-# Add new weapons & ammo with varying abilities
-    # rocket launch (might have to implement rate of fire for this)
-# Add prices for weapons
-# maybe cut levels entirely & just have speeding up of alien ships
+# Add prices for weapons & redo store
+# have different bonuses that give different abilities
+# have chloe design weapons & ships
 # maybe have some alien ships that require 2+ hits to kill
 
 R = "Right"
@@ -27,7 +26,7 @@ def gameplay():
         intro.play(-1)
         num_levels = 5
         game_params = {
-            "name": render_welcome(),
+            "name": "jord",  # render_welcome(),
             "speed": 1,
             "weapon": Weapon1(worldx, worldy),
             "score": 0,
@@ -35,6 +34,8 @@ def gameplay():
             "bonus_starttime": -1,
             "lives": None,
             "obstacles": None,
+            "muted": False,
+            "purchased": [True, False, False, False, False],
         }
         intro.stop()
 
@@ -57,9 +58,7 @@ def levels(game_params, num_levels):
         initialize_lives(game_params, 3)
         initialize_obstacles(game_params, 5)
 
-        render_level_start(
-            game_params["name"], game_params["score"], game_params["level"], max_score
-        )
+        # level_start_loop(game_params)
         while game_params["score"] < max_score:
             render_backdrop(game_params["level"])
             render_score(game_params["name"], game_params["score"], max_score)
@@ -78,9 +77,9 @@ def roaming(game_params):
     hit, new_bonus = check_hit(game_params)
     if new_bonus > game_params["bonus_starttime"]:
         game_params["bonus_starttime"] = new_bonus
+
     add_new_obstacles(game_params, hit)
     check_ammo_disappear(game_params)
-
     world.blit(game_params["weapon"].image, game_params["weapon"].rect)
 
     check_key_press(game_params)
@@ -100,15 +99,19 @@ def check_key_press(game_params):
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-
         if event.type == pygame.KEYDOWN:
             if event.key == ord("p"):
                 pause_loop(game_params)
-            if event.key == pygame.K_SPACE:
-                ammo_fire.play()
-                game_params["weapon"].new_ammo()
+            if event.key == ord("m"):
+                if game_params["muted"]:
+                    pygame.mixer.music.play(-1)
+                else:
+                    pygame.mixer.music.stop()
+                game_params["muted"] = not game_params["muted"]
 
     keys = pygame.key.get_pressed()
+    if keys[pygame.K_SPACE]:
+        game_params["weapon"].new_ammo(pygame.time.get_ticks())
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         game_params["weapon"].move(R)
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -119,10 +122,25 @@ def check_key_press(game_params):
         game_params["weapon"].rotate(L)
 
     if game_params["bonus_starttime"] != -1:
-        render_bonus_mode()
-        if keys[pygame.K_SPACE]:
-            ammo_fire.play()
-            game_params["weapon"].new_ammo()
+        render_bonus_mode(game_params["bonus_starttime"])
+        game_params["weapon"].curr_rof = 3 * game_params["weapon"].rof
+    else:
+        game_params["weapon"].curr_rof = game_params["weapon"].rof
+
+
+def level_start_loop(game_params):
+    starttime = pygame.time.get_ticks()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == ord("q"):
+                    return
+        if pygame.time.get_ticks() > starttime + 10000:
+            return
+
+        render_level_start(game_params["level"])
+        pygame.display.flip()
+        clock.tick(fps)
 
 
 def pause_loop(game_params):
@@ -130,6 +148,12 @@ def pause_loop(game_params):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
+                if event.key == ord("m"):
+                    if game_params["muted"]:
+                        pygame.mixer.music.play(-1)
+                    else:
+                        pygame.mixer.music.stop()
+                    game_params["muted"] = not game_params["muted"]
                 if event.key == ord("q"):
                     exit_check_loop()
                     pause_stop = pygame.time.get_ticks()
@@ -165,25 +189,13 @@ def store_loop(game_params):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     x, y = event.pos
-                    if (215 < x < 485) and (170 < y < 275):
-                        if isinstance(game_params["weapon"], Weapon1):
-                            continue
-                        else:
-                            game_params["weapon"] = Weapon1(worldx, worldy)
-                            game_params["bonus_starttime"] = -1
-                            return
-                    if (215 < x < 485) and (300 < y < 415):
-                        if isinstance(game_params["weapon"], Weapon2):
-                            continue
-                        else:
-                            game_params["weapon"] = Weapon2(worldx, worldy)
-                            game_params["bonus_starttime"] = -1
-                            return
+                    if new_weapon(game_params, x, y):
+                        return
             if event.type == pygame.KEYDOWN:
                 if event.key == ord("q"):
                     return
 
-        render_store()
+        render_store(game_params)
         pygame.display.flip()
         clock.tick(fps)
 
@@ -239,6 +251,40 @@ def initialize_obstacles(game_params, num):
     game_params["obstacles"] = obstacles
 
 
+def new_weapon(game_params, x, y):
+    if 150 < y < 440:
+        if 210 < x < 310:
+            if not isinstance(game_params["weapon"], Weapon1):
+                game_params["weapon"] = Weapon1(worldx, worldy)
+                game_params["bonus_starttime"] = -1
+                if not game_params["purchased"][0]:
+                    game_params["score"] -= 100
+                    game_params["purchased"][0] = True
+                return True
+        elif 330 < x < 430:
+            if not isinstance(game_params["weapon"], Weapon2):
+                game_params["weapon"] = Weapon2(worldx, worldy)
+                game_params["bonus_starttime"] = -1
+                if not game_params["purchased"][1]:
+                    game_params["score"] -= 200
+                    game_params["purchased"][1] = True
+                return True
+        elif 450 < x < 550:
+            if not isinstance(game_params["weapon"], Weapon3):
+                game_params["weapon"] = Weapon3(worldx, worldy)
+                game_params["bonus_starttime"] = -1
+                if not game_params["purchased"][2]:
+                    game_params["score"] -= 300
+                    game_params["purchased"][2] = True
+                return True
+        elif 570 < x < 670:
+            pass
+        elif 690 < x < 790:
+            pass
+
+    return False
+
+
 def add_new_obstacles(game_params, hit):
     if hit:
         new_obstacle = Obstacle(game_params["level"])
@@ -289,12 +335,18 @@ def check_misses(game_params):
 
 
 def check_hit(game_params):
-    for obstacle in game_params["obstacles"]:
-        for ammo in game_params["weapon"].mag:
+    for ammo in game_params["weapon"].mag:
+        in_range = []
+        for obstacle in game_params["obstacles"]:
+            if ammo.damage_rect.colliderect(obstacle.rect):
+                in_range.append(obstacle)
+        for obstacle in game_params["obstacles"]:
             if ammo.rect.colliderect(obstacle.rect):
-                game_params["obstacles"].remove(obstacle)
+                for inner_ob in in_range:
+                    game_params["obstacles"].remove(inner_ob)
+                    game_params["score"] += 10
                 game_params["weapon"].remove_ammo(ammo)
-                game_params["score"] += 10
+                render_explosion(ammo)
                 ammo_hit.play()
                 if obstacle.bonus:
                     return True, pygame.time.get_ticks()

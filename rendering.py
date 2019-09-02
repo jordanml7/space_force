@@ -3,6 +3,7 @@ import sys
 
 from numpy.random import randint
 from time import sleep
+from weapons import weapons_info
 
 pygame.font.init()
 clock = pygame.time.Clock()
@@ -17,36 +18,15 @@ worldy = 600
 world = pygame.display.set_mode([worldx, worldy])
 backdropbox = world.get_rect()
 
-font_extra_small = pygame.font.Font("freesansbold.ttf", 10)
-font_small = pygame.font.Font("freesansbold.ttf", 20)
+font_extra_small = pygame.font.Font("freesansbold.ttf", 15)
+font_small = pygame.font.Font("freesansbold.ttf", 25)
 font_med = pygame.font.Font("freesansbold.ttf", 40)
 font_large = pygame.font.Font("freesansbold.ttf", 60)
 
 
-def render_level_start(name, score, level, max_score):
-    starttime = pygame.time.get_ticks()
-    scorecard = font_small.render(f"{name}'s Score :: {score}/{max_score}", True, WHITE)
-    scorecard_rect = scorecard.get_rect()
-    scorecard_rect.topright = (worldx - 30, 30)
-
-    welcome_vis = font_med.render("Now beginning...", True, WHITE)
-    welcome_rect = welcome_vis.get_rect()
-    welcome_rect.center = (worldx / 2, worldy / 3 - 75)
-
-    level_vis = font_large.render(f"Level {level}", True, WHITE)
-    level_rect = level_vis.get_rect()
-    level_rect.center = (worldx / 2, worldy / 3)
-
-    while True:
-        pre_world = pygame.display.set_mode([worldx, worldy])
-        pre_world.fill(BLACK)
-        pre_world.blit(scorecard, scorecard_rect)
-        pre_world.blit(welcome_vis, welcome_rect)
-        pre_world.blit(level_vis, level_rect)
-        pygame.display.flip()
-        clock.tick(fps)
-        if pygame.time.get_ticks() > starttime + 5000:
-            break
+def render_level_start(level):
+    level_card = pygame.image.load(f"images/level_cards/level{level}.png").convert()
+    world.blit(level_card, backdropbox)
 
 
 def render_backdrop(level):
@@ -71,12 +51,48 @@ def render_score(name, score, max_score):
     world.blit(scorecard, scorecard_rect)
 
 
-def render_bonus_mode():
+def render_lives(lives):
+    for life in lives:
+        world.blit(life.image, life.rect)
+
+
+def render_bonus_mode(bonus_starttime):
     color = (randint(0, 255), randint(0, 255), randint(0, 255))
     bonus_mode = font_small.render("B O N U S  M O D E", True, color, BLACK)
     bonus_rect = bonus_mode.get_rect()
     bonus_rect.midtop = (worldx / 2, 30)
+
+    multiplier = font_extra_small.render("3x RATE OF FIRE!", True, WHITE)
+    multiplier = pygame.transform.rotozoom(multiplier, 25, 1)
+    multiplier_rect = multiplier.get_rect()
+    multiplier_rect.midbottom = (worldx - 50, worldy - 470)
+
+    fraction_remaining = 1 - (pygame.time.get_ticks() - bonus_starttime) / 5000
+    border = pygame.Rect((0, 0), (30, 450))
+    border.midbottom = (worldx - 50, worldy - 50)
+
+    loading = pygame.Rect((0, 0), (30, fraction_remaining * 450))
+    loading.midbottom = (worldx - 50, worldy - 50)
+
+    pygame.draw.rect(world, WHITE, border, 1)
+    pygame.draw.rect(world, (16, 0, 101), loading)
     world.blit(bonus_mode, bonus_rect)
+    world.blit(multiplier, multiplier_rect)
+
+
+def render_explosion(ammo):
+    explosion = pygame.image.load("images/explosion.png").convert()
+    h = 2 * ammo.damage_rect.height
+    w = 2 * ammo.damage_rect.width
+    explosion = pygame.transform.scale(explosion, (w, h))
+    explosion.convert_alpha()  # optimise alpha
+    ALPHA = explosion.get_at((0, 0))
+    explosion.set_colorkey(ALPHA)  # set alpha
+
+    explosion_rect = explosion.get_rect()
+    explosion_rect.center = ammo.rect.center
+
+    world.blit(explosion, explosion_rect)
 
 
 def render_pause():
@@ -93,11 +109,11 @@ def render_pause():
         "Press 's' for the WEAPON STORE", True, WHITE, BLACK
     )
     store_rect = store.get_rect()
-    store_rect.center = (worldx / 2, worldy / 2 + 50)
+    store_rect.center = (worldx / 2, worldy / 2 + 55)
 
     exit = font_extra_small.render("Press 'q' to exit the game", True, WHITE, BLACK)
     exit_rect = exit.get_rect()
-    exit_rect.center = (worldx / 2, worldy / 2 + 70)
+    exit_rect.center = (worldx / 2, worldy / 2 + 80)
 
     world.blit(pause, pause_rect)
     world.blit(instruc, instruc_rect)
@@ -115,14 +131,50 @@ def render_instructions():
     pygame.draw.rect(world, color, instruc_rect, 2)
 
 
-def render_store():
-    store = pygame.image.load(f"images/store.png").convert()
-    store_rect = store.get_rect()
-    store_rect.center = (worldx / 2, worldy / 2)
-
+def render_store(game_params):
     color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    world.blit(store, store_rect)
-    pygame.draw.rect(world, color, store_rect, 2)
+    store = pygame.Rect((0, 0), (600, 340))
+    store.center = (worldx / 2, worldy / 2)
+    pygame.draw.rect(world, WHITE, store)
+    pygame.draw.rect(world, color, store, 4)
+
+    for i in range(1, 4):
+        y = 110 * i - 220 + worldy / 2
+        weapon_box = pygame.Rect((0, 0), (580, 100))
+        weapon_box.center = (worldx / 2, y)
+        pygame.draw.rect(world, BLACK, weapon_box)
+
+        weapon = pygame.image.load(f"images/weapons/store/weapon{i}.png").convert()
+        weapon_rect = weapon.get_rect()
+        weapon_rect.center = (worldx / 2 - 240, y)
+        world.blit(weapon, weapon_rect)
+
+        line1 = font_extra_small.render(
+            f"Speed: {weapons_info[i-1]['speed']} | Strength: {weapons_info[i-1]['strength']} | Movement: {weapons_info[i-1]['movement']}",
+            True,
+            WHITE,
+        )
+        line1_rect = line1.get_rect()
+        line1_rect.midleft = (worldx / 2 - 180, y - 30)
+        world.blit(line1, line1_rect)
+
+        line2 = font_extra_small.render(
+            f"Angles: {weapons_info[i-1]['angles']} | Rate of Fire: {weapons_info[i-1]['rof']} | Ammo: {weapons_info[i-1]['ammo']}",
+            True,
+            WHITE,
+        )
+        line2_rect = line2.get_rect()
+        line2_rect.midleft = (worldx / 2 - 180, y)
+        world.blit(line2, line2_rect)
+
+        line3 = font_extra_small.render(
+            f"Ammo Strength: {weapons_info[i-1]['ammo_strength']} | Ammo Speed: {weapons_info[i-1]['ammo_speed']} | Cost: {weapons_info[i-1]['cost']} points",
+            True,
+            WHITE,
+        )
+        line3_rect = line3.get_rect()
+        line3_rect.midleft = (worldx / 2 - 180, y + 30)
+        world.blit(line3, line3_rect)
 
 
 def render_welcome():
@@ -260,8 +312,3 @@ def render_final_score(name, level, score):
         clock.tick(fps)
 
     return False
-
-
-def render_lives(lives):
-    for life in lives:
-        world.blit(life.image, life.rect)
