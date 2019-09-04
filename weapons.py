@@ -51,10 +51,7 @@ class Weapon1(pygame.sprite.Sprite):
         self.worldx = worldx
         self.worldy = worldy
 
-        img = pygame.image.load(f"images/weapons/weapon1.png").convert()
-        img.convert_alpha()  # optimise alpha
-        ALPHA = img.get_at((0, 0))
-        img.set_colorkey(ALPHA)  # set alpha
+        img = pygame.image.load(f"images/weapons/weapon1.png").convert_alpha()
         self.orig_image = img
 
         self.image = self.orig_image
@@ -93,7 +90,7 @@ class Weapon1(pygame.sprite.Sprite):
         elif self.orientation == "Left":
             self.image = self.orig_image
 
-    def rotate(self):
+    def rotate(self, dir):
         pass  # does nothing for Weapon 1
 
     def new_ammo(self, time):
@@ -127,20 +124,17 @@ class Weapon2(pygame.sprite.Sprite):
         self.worldx = worldx
         self.worldy = worldy
 
-        img = pygame.image.load(f"images/weapons/weapon2.png").convert()
-        img.convert_alpha()  # optimise alpha
-        ALPHA = img.get_at((0, 0))
-        img.set_colorkey(ALPHA)  # set alpha
+        img = pygame.image.load(f"images/weapons/weapon2/90.png").convert_alpha()
         self.orig_image = img
 
         self.image = self.orig_image
         self.rect = self.image.get_rect()
-        self.rect.center = ((self.worldx / 2), self.worldy - 25)
+        self.rect.midbottom = ((self.worldx / 2), self.worldy)
 
         self.mag = []
-        self.angle = 0
+        self.angle = 90
         self.speed = 12
-        self.angular_speed = 5
+        self.angular_speed = 10
         self.collisions = 2
 
         self.rof = 3  # shots per second
@@ -162,32 +156,33 @@ class Weapon2(pygame.sprite.Sprite):
             self.rect.x = 0
 
     def rotate(self, dir):
+        orig_center = self.rect.midbottom
         if dir == "Right":
-            self.angle -= self.angular_speed
-        else:
             self.angle += self.angular_speed
+        else:
+            self.angle -= self.angular_speed
 
-        if self.angle > 50:
-            self.angle = 50
-        elif self.angle < -50:
-            self.angle = -50
+        if self.angle < 20:
+            self.angle = 20
+        elif self.angle > 160:
+            self.angle = 160
 
-        pivot = self.rect.center
-        img = pygame.transform.rotozoom(self.orig_image, self.angle, 1)
-        img.convert_alpha()  # optimise alpha
-        ALPHA = img.get_at((0, 0))
-        img.set_colorkey(ALPHA)  # set alpha
-
+        if self.angle > 90:
+            img = pygame.image.load(f"images/weapons/weapon2/{180 - self.angle}.png").convert_alpha()
+            img = pygame.transform.flip(img, True, False)
+        else:
+            img = pygame.image.load(f"images/weapons/weapon2/{self.angle}.png").convert_alpha()
+        
         self.image = img
         self.rect = self.image.get_rect()
-        self.rect.center = pivot
+        self.rect.midbottom = orig_center
 
     def new_ammo(self, time):
         if time < self.last_fire + 1000 / self.curr_rof:
             return
 
         ammo_fire.play()
-        new_laser = RedLaser(self.rect.center[0], self.rect.center[1], self.angle)
+        new_laser = RedLaser(self.rect.midbottom[0], self.rect.midbottom[1] - 20, self.angle)
         self.last_fire = time
         self.mag.append(new_laser)
 
@@ -248,7 +243,7 @@ class Weapon3(pygame.sprite.Sprite):
         elif self.orientation == "Left":
             self.image = self.orig_image
 
-    def rotate(self):
+    def rotate(self, dir):
         pass  # does nothing for Weapon 3
 
     def new_ammo(self, time):

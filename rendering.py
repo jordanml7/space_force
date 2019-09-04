@@ -144,7 +144,7 @@ def render_store(game_params):
         weapon_box.center = (worldx / 2, y)
         pygame.draw.rect(world, BLACK, weapon_box)
 
-        weapon = pygame.image.load(f"images/weapons/store/weapon{i}.png").convert()
+        weapon = pygame.image.load(f"images/weapons/store/weapon{i}.png").convert_alpha()
         weapon_rect = weapon.get_rect()
         weapon_rect.center = (worldx / 2 - 240, y)
         world.blit(weapon, weapon_rect)

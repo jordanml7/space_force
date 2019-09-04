@@ -42,7 +42,7 @@ class RedLaser(pygame.sprite.Sprite):
     def __init__(self, x, y, angle):
         pygame.sprite.Sprite.__init__(self)
 
-        self.angle = angle
+        self.angle = 90-angle
         laser = pygame.image.load("images/ammo/red_laser.png").convert()
         laser_rot = pygame.transform.rotozoom(laser, self.angle, 1)
         laser_rot.convert_alpha()  # optimise alpha
