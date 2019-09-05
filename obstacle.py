@@ -15,13 +15,15 @@ class Obstacle(pygame.sprite.Sprite):
             self.bonus = True
 
         if self.bonus:
-            bonus = pygame.image.load(f"images/bonus_obstacle.png").convert()
+            bonus = pygame.image.load(f"images/obstacles/bonus_obstacle.png").convert()
             bonus.convert_alpha()
             ALPHA = bonus.get_at((1, 1))
             bonus.set_colorkey(ALPHA)  # set alpha
             self.image = bonus
         else:
-            image = pygame.image.load(f"images/level{level}_obstacle.png").convert()
+            image = pygame.image.load(
+                f"images/obstacles/level{level}_obstacle.png"
+            ).convert()
             image.convert_alpha()  # optimise alpha
             ALPHA = image.get_at((1, 1))
             image.set_colorkey(ALPHA)  # set alpha

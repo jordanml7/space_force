@@ -81,6 +81,8 @@ def roaming(game_params):
     add_new_obstacles(game_params, hit)
     check_ammo_disappear(game_params)
     world.blit(game_params["weapon"].image, game_params["weapon"].rect)
+    if isinstance(game_params["weapon"], Weapon2):
+        world.blit(game_params["weapon"].barrel, game_params["weapon"].barrel_rect)
 
     check_key_press(game_params)
     if check_collision(game_params) or check_misses(game_params):

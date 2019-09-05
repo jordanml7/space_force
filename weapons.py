@@ -124,15 +124,22 @@ class Weapon2(pygame.sprite.Sprite):
         self.worldx = worldx
         self.worldy = worldy
 
-        img = pygame.image.load(f"images/weapons/weapon2/90.png").convert_alpha()
+        img = pygame.image.load("images/weapons/weapon2.png").convert_alpha()
         self.orig_image = img
 
         self.image = self.orig_image
         self.rect = self.image.get_rect()
         self.rect.midbottom = ((self.worldx / 2), self.worldy)
 
+        barrel = pygame.image.load("images/weapons/weapon2_barrel.png").convert_alpha()
+        self.orig_barrel = barrel
+
+        self.barrel = self.orig_barrel
+        self.barrel_rect = self.barrel.get_rect()
+        self.barrel_rect.center = self.rect.center
+
         self.mag = []
-        self.angle = 90
+        self.angle = 0
         self.speed = 12
         self.angular_speed = 10
         self.collisions = 2
@@ -155,34 +162,38 @@ class Weapon2(pygame.sprite.Sprite):
         elif self.rect.x <= 0:
             self.rect.x = 0
 
+        self.update_barrel()
+
     def rotate(self, dir):
         orig_center = self.rect.midbottom
         if dir == "Right":
-            self.angle += self.angular_speed
-        else:
             self.angle -= self.angular_speed
-
-        if self.angle < 20:
-            self.angle = 20
-        elif self.angle > 160:
-            self.angle = 160
-
-        if self.angle > 90:
-            img = pygame.image.load(f"images/weapons/weapon2/{180 - self.angle}.png").convert_alpha()
-            img = pygame.transform.flip(img, True, False)
         else:
-            img = pygame.image.load(f"images/weapons/weapon2/{self.angle}.png").convert_alpha()
-        
-        self.image = img
-        self.rect = self.image.get_rect()
-        self.rect.midbottom = orig_center
+            self.angle += self.angular_speed
+
+        if self.angle < -80:
+            self.angle = -80
+        elif self.angle > 80:
+            self.angle = 80
+
+        if self.angle > 0:
+            self.image = pygame.transform.flip(self.orig_image, True, False)
+        else:
+            self.image = self.orig_image
+
+        self.barrel = pygame.transform.rotozoom(self.orig_barrel, self.angle, 1)
+        self.update_barrel()
+
+    def update_barrel(self):
+        self.barrel_rect = self.barrel.get_rect()
+        self.barrel_rect.center = self.rect.center
 
     def new_ammo(self, time):
         if time < self.last_fire + 1000 / self.curr_rof:
             return
 
         ammo_fire.play()
-        new_laser = RedLaser(self.rect.midbottom[0], self.rect.midbottom[1] - 20, self.angle)
+        new_laser = RedLaser(self.rect.center[0], self.rect.center[1], self.angle)
         self.last_fire = time
         self.mag.append(new_laser)
 

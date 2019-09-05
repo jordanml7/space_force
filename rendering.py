@@ -30,7 +30,7 @@ def render_level_start(level):
 
 
 def render_backdrop(level):
-    backdrop = pygame.image.load(f"images/level{level}.png").convert()
+    backdrop = pygame.image.load(f"images/backgrounds/level{level}.png").convert()
     world.blit(backdrop, backdropbox)
 
 
@@ -144,7 +144,9 @@ def render_store(game_params):
         weapon_box.center = (worldx / 2, y)
         pygame.draw.rect(world, BLACK, weapon_box)
 
-        weapon = pygame.image.load(f"images/weapons/store/weapon{i}.png").convert_alpha()
+        weapon = pygame.image.load(
+            f"images/weapons/store/weapon{i}.png"
+        ).convert_alpha()
         weapon_rect = weapon.get_rect()
         weapon_rect.center = (worldx / 2 - 240, y)
         world.blit(weapon, weapon_rect)

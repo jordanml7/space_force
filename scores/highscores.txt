@@ -16,6 +16,7 @@ jordan,610
 jennifer,560
 MOOMOOYALL,530
 sadf,440
+jord,390
 sdjsdf,340
 ,330
 erin,240
@@ -32,3 +33,4 @@ asdf,10
 jord,0
 sdf,0
 sdf,0
+jord,-200

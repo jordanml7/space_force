@@ -42,13 +42,9 @@ class RedLaser(pygame.sprite.Sprite):
     def __init__(self, x, y, angle):
         pygame.sprite.Sprite.__init__(self)
 
-        self.angle = 90-angle
-        laser = pygame.image.load("images/ammo/red_laser.png").convert()
-        laser_rot = pygame.transform.rotozoom(laser, self.angle, 1)
-        laser_rot.convert_alpha()  # optimise alpha
-        ALPHA = laser_rot.get_at((0, 0))
-        laser_rot.set_colorkey(ALPHA)  # set alpha
-        self.image = laser_rot
+        self.angle = angle
+        laser = pygame.image.load("images/ammo/red_laser.png").convert_alpha()
+        self.image = laser
 
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -62,7 +58,7 @@ class RedLaser(pygame.sprite.Sprite):
         self.update_damage_rect()
 
     def update_damage_rect(self):
-        self.damage_rect = self.rect.copy()
+        self.damage_rect = self.rect.inflate(20, 20)
 
 
 class Missile(pygame.sprite.Sprite):
