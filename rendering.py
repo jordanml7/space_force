@@ -44,8 +44,8 @@ def render_exit_check():
     world.blit(check, check_rect)
 
 
-def render_score(name, score, max_score):
-    scorecard = font_small.render(f"{name}'s Score :: {score}/{max_score}", True, WHITE)
+def render_score(name, score):
+    scorecard = font_small.render(f"{name}'s Score :: {score} \u03C2", True, WHITE)
     scorecard_rect = scorecard.get_rect()
     scorecard_rect.topright = (worldx - 30, 30)
     world.blit(scorecard, scorecard_rect)
@@ -145,7 +145,7 @@ def render_store(game_params):
         pygame.draw.rect(world, BLACK, weapon_box)
 
         weapon = pygame.image.load(
-            f"images/weapons/store/weapon{i}.png"
+            f"images/store/weapon{i}.png"
         ).convert_alpha()
         weapon_rect = weapon.get_rect()
         weapon_rect.center = (worldx / 2 - 240, y)

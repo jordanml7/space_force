@@ -61,7 +61,7 @@ def levels(game_params, num_levels):
         # level_start_loop(game_params)
         while game_params["score"] < max_score:
             render_backdrop(game_params["level"])
-            render_score(game_params["name"], game_params["score"], max_score)
+            render_score(game_params["name"], game_params["score"])
             render_lives(game_params["lives"])
 
             lost = roaming(game_params)
