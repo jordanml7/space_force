@@ -26,7 +26,7 @@ def gameplay():
         intro.play(-1)
         num_levels = 5
         game_params = {
-            "name": "jord",  # render_welcome(),
+            "name": render_welcome(),
             "speed": 1,
             "weapon": Weapon1(worldx, worldy),
             "score": 0,
@@ -58,7 +58,7 @@ def levels(game_params, num_levels):
         initialize_lives(game_params, 3)
         initialize_obstacles(game_params, 5)
 
-        # level_start_loop(game_params)
+        level_start_loop(game_params)
         while game_params["score"] < max_score:
             render_backdrop(game_params["level"])
             render_score(game_params["name"], game_params["score"])
