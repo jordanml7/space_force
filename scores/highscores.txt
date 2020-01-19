@@ -3,11 +3,13 @@ Bob,3780
 dfkj,2910
 skd,2820
 Jordan,2430
+Jordan,2430
 Jordan,2420
 ian,2340
 erin,2030
 adskf,1800
 dkflgj,1570
+erin,1420
 noah,1290
 TEST,1230
 alsdkfj,820
