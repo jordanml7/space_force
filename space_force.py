@@ -19,7 +19,6 @@ from weapons import *
 R = "Right"
 L = "Left"
 
-
 def gameplay():
     playagain = True
     while playagain:
